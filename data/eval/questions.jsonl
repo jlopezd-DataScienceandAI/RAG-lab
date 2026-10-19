@@ -1,0 +1,3 @@
+{"id": "example-01", "question": "REPLACE: a question whose answer is in one of your documents", "answerable": true, "gold_doc": "your_document.pdf", "gold_section": "3.2", "expected_answer": "REPLACE: the short expected answer"}
+{"id": "example-02", "question": "REPLACE: a question that needs an exact term, code or acronym", "answerable": true, "gold_doc": "your_document.pdf", "gold_section": null, "expected_answer": "REPLACE"}
+{"id": "example-03", "question": "REPLACE: a plausible question the corpus does NOT answer", "answerable": false, "gold_doc": null, "gold_section": null, "expected_answer": null}
