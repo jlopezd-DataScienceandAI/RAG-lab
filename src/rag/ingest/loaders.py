@@ -4,6 +4,8 @@ import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
+from pypdf import PdfReader
+
 
 @dataclass(frozen=True)
 class RawPage:
@@ -24,9 +26,23 @@ def file_sha256(path: Path) -> str:
 def load_document(path: Path) -> list[RawPage]:
     """Return one RawPage per PDF page, or a single RawPage for .md / .txt files.
 
-    TODO(v0.1):
+    (v0.1):
       - .pdf  -> pypdf, one RawPage per page (keep the page number for citations)
       - .md / .txt -> read as UTF-8
       - raise a clear error for unsupported extensions
     """
-    raise NotImplementedError("load_document is the first function to implement")
+    suffix = path.suffix.lower()
+
+    if suffix == ".pdf":
+        reader = PdfReader(path)
+        pages = []
+        for n, p in enumerate(reader.pages, start=1):
+            text = p.extract_text() or ""
+            if text.strip() != "":
+                pages.append(RawPage(doc=path.name, page=n, text=text))
+        return pages
+
+    if suffix in (".md", ".txt"):
+        return [RawPage(doc=path.name, page=None, text=path.read_text(encoding="utf-8"))]
+
+    raise ValueError(f"Unsupported file type: {path.suffix!r} ({path.name})")
