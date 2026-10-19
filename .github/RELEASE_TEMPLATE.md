@@ -9,7 +9,7 @@
 ```bash
 git checkout vX.Y
 uv sync --extra dev
-cp .env.example .env   # add ANTHROPIC_API_KEY
+# create a .env file in the repo root containing: ANTHROPIC_API_KEY=<your key>
 uv run rag ingest && uv run rag eval
 ```
 

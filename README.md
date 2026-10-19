@@ -35,7 +35,7 @@ Evaluation (rag eval)
 
 ```bash
 uv sync --extra dev            # or: python -m venv .venv && pip install -e ".[dev]"
-cp .env.example .env           # add your ANTHROPIC_API_KEY
+# create a .env file in the repo root containing: ANTHROPIC_API_KEY=<your key>
 # put your documents in data/raw/
 uv run rag ingest
 uv run rag ask "What is ...?"
