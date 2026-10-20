@@ -11,6 +11,7 @@ and let the numbers justify the change in the next version.
 | L4 | Any document change means reindexing everything | Time a full `ingest` vs. an incremental one | TBD | Incremental updates, pgvector |
 | L5 | `chunks.db` and `vectors.npy` can get out of sync | Test that interrupts a save and checks consistency on load | TBD | A single transactional store |
 | L6 | No interface, no concurrent access | Evident | n/a | v0.2: API |
+| L7 | `pypdf` rarely emits blank lines, so a PDF page becomes one "paragraph" and paragraph-aware chunking falls back to cutting by token windows, mid-sentence | Share of chunks that start in lowercase or end without punctuation, per document; re-measure with sentence-aware chunking (same corpus, dataset, model, size and overlap) | Preliminary, before the overlap fixes: `EU_GDPR.pdf` has 0 of 78 pages with a blank line; 46 of 141 chunks start in lowercase and 132 of 141 end without punctuation. `EBA_GL_Internal_Governance.pdf` has 79 of 93 pages with a blank line; 54 of 163 and 105 of 163. Re-measure on the final chunker | v0.1 step 11: sentence-aware chunking; later, layout-aware PDF extraction |
 
 ## How to fill this in
 
