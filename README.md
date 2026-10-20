@@ -13,7 +13,8 @@ Every version is evaluated on the same dataset (`data/eval/questions.jsonl`).
 
 | Version | Main change | Hit@5 | MRR | Latency | Details |
 |---|---|---|---|---|---|
-| v0.1 | Baseline: numpy + SQLite, dense retrieval, cited answers | TBD | TBD | TBD | TBD |
+| v0.1 | Baseline: numpy + SQLite, dense retrieval, cited answers, paragraph chunking | TBD | TBD | TBD | TBD |
+| v0.1 | Same baseline with sentence-aware chunking (only change) | TBD | TBD | TBD | TBD |
 
 Each limitation found in one version motivates the next one: see
 [docs/limitations.md](docs/limitations.md).
@@ -57,7 +58,8 @@ docs/                design decisions, limitations, workflow
 
 ## Roadmap
 
-- **v0.1** baseline RAG with its own evaluation
+- **v0.1** baseline RAG with its own evaluation, plus a measured comparison of paragraph vs.
+  sentence-aware chunking
 - **v0.2** API (FastAPI) and a small demo UI
 - **v0.3** hybrid search (BM25 + vectors), reranking, vector-store comparison, ragas
 - **v0.4** agent with tools
