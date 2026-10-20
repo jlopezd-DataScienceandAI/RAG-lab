@@ -68,6 +68,49 @@ def test_blank_pdf_pages_are_skipped(tmp_path):
     assert load_document(f) == []
 
 
+def test_utf8_bom_is_removed(tmp_path):
+    f = tmp_path / "bom.md"
+    f.write_bytes(b"\xef\xbb\xbf# Title")  # what Windows editors write with "UTF-8 with BOM"
+    assert load_document(f)[0].text == "# Title"
+
+
+def test_empty_markdown_gives_no_pages(tmp_path):
+    f = tmp_path / "empty.md"
+    f.write_text("  \n\n", encoding="utf-8")
+    assert load_document(f) == []
+
+
+def test_missing_file_raises(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        load_document(tmp_path / "missing.md")
+
+
+def test_pdf_extension_is_case_insensitive(tmp_path):
+    f = tmp_path / "BLANK.PDF"
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    with f.open("wb") as handle:
+        writer.write(handle)
+    assert load_document(f) == []  # reached the PDF branch instead of "Unsupported"
+
+
+def test_skipped_pdf_pages_keep_original_numbers(tmp_path, monkeypatch):
+    class FakePage:
+        def __init__(self, text):
+            self._text = text
+
+        def extract_text(self):
+            return self._text
+
+    class FakeReader:
+        def __init__(self, _path):
+            self.pages = [FakePage("one"), FakePage(""), FakePage(None), FakePage("four")]
+
+    monkeypatch.setattr("rag.ingest.loaders.PdfReader", FakeReader)
+    pages = load_document(tmp_path / "doc.pdf")
+    assert [(p.page, p.text) for p in pages] == [(1, "one"), (4, "four")]
+
+
 @pytest.mark.skipif(not RAW_PDFS, reason="no PDFs in data/raw")
 @pytest.mark.parametrize("pdf", RAW_PDFS, ids=lambda p: p.name)
 def test_real_pdfs_keep_page_numbers(pdf):

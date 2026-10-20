@@ -28,7 +28,7 @@ def load_document(path: Path) -> list[RawPage]:
 
     (v0.1):
       - .pdf  -> pypdf, one RawPage per page (keep the page number for citations)
-      - .md / .txt -> read as UTF-8
+      - .md / .txt -> read as UTF-8, with or without BOM; empty files give no pages
       - raise a clear error for unsupported extensions
     """
     suffix = path.suffix.lower()
@@ -43,6 +43,10 @@ def load_document(path: Path) -> list[RawPage]:
         return pages
 
     if suffix in (".md", ".txt"):
-        return [RawPage(doc=path.name, page=None, text=path.read_text(encoding="utf-8"))]
+        # utf-8-sig drops the BOM that Windows editors add and reads BOM-less files unchanged
+        text = path.read_text(encoding="utf-8-sig")
+        if text.strip() == "":
+            return []
+        return [RawPage(doc=path.name, page=None, text=text)]
 
     raise ValueError(f"Unsupported file type: {path.suffix!r} ({path.name})")
