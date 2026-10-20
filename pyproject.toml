@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "rag-project"
+name = "rag-lab"
 version = "0.1.0"
 description = "A small RAG pipeline built from scratch (numpy + SQLite) with its own evaluation harness."
 readme = "README.md"

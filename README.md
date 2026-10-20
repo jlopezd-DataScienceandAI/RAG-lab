@@ -1,4 +1,4 @@
-# rag-project
+# rag-lab
 
 A small Retrieval-Augmented Generation (RAG) pipeline built from scratch: no LangChain, no
 LlamaIndex, no vector database. Every piece (chunking, retrieval, prompting, evaluation) is
@@ -42,6 +42,12 @@ uv run rag ingest
 uv run rag ask "What is ...?"
 uv run rag eval
 ```
+
+## Corpus
+
+Pending: the source list is still being collected. For each document this section will state
+what it is, where it comes from, its licence and the download date. Documents currently in
+`data/raw/`: `AI_act.pdf`, `RGPD.pdf`, `default_definition.pdf`, `PD_LGD_estimation.pdf`.
 
 ## Project layout
 
