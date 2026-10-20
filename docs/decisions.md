@@ -45,3 +45,69 @@ One entry per decision: what was chosen, why, what else was considered, and when
 - **Decision:** `main` always holds the latest code; each version is developed on a branch,
   merged through a pull request, and marked with a tag and a GitHub Release.
 - **Why:** git already records history; folders per version duplicate code and hide it.
+
+## D-008 Paragraph-aware token chunking, 500 tokens / 75 overlap (2026-10-20)
+- **Decision:** split each page on blank lines; glue short heading-like paragraphs (under 12
+  tokens, no final punctuation) to the next one; pack paragraphs into chunks of at most 500
+  tokens; cut a paragraph longer than that with a sliding window; repeat the last 75 tokens
+  at the start of the next chunk.
+- **Why:** paragraphs are the natural unit of legal and regulatory text; counting tokens makes
+  sizes comparable across documents; a heading alone makes a useless chunk. The 500/75 values
+  are the starting point of the v0.1 guide (about 15% overlap), not tuned yet.
+- **Known limit:** window cuts and the overlap work on tokens, so a sentence can be cut in
+  half. This is the baseline that the sentence-aware strategy (guide, step 11) is measured
+  against.
+- **Alternatives:** fixed-size character windows, sentence-aware packing, splitting by
+  article or section.
+- **Revisit:** step 11 (paragraph vs. sentence comparison) and later chunk-size experiments.
+
+## D-009 tiktoken `cl100k_base` to count tokens (2026-10-20)
+- **Decision:** measure chunk size with tiktoken (`cl100k_base`), not with the embedding
+  model's own tokenizer.
+- **Why:** fast, no model needed at chunking time, and good enough to compare sizes.
+- **Known risk (to verify):** `bge-small-en-v1.5` has its own tokenizer and a 512-token
+  input limit. A chunk of 500 `cl100k` tokens may exceed 512 model tokens and be truncated
+  silently. Before step 8, count how many chunks go over the limit with the model tokenizer.
+- **Alternatives:** count with the embedding model's tokenizer.
+- **Revisit:** if the check above finds truncated chunks, or when changing the embedding model.
+
+## D-010 Chunk ids and page handling (2026-10-20)
+- **Decision:** the id is `{doc}::p{page}::c{index:03d}`, where `doc` is the file name, `page`
+  is the 1-based PDF page (0 for formats without pages) and `index` counts chunks per
+  document without resetting between pages. Chunks never cross a page boundary. `section`
+  stays `None` in v0.1.
+- **Why:** readable ids that the model can cite and a person can trace back to a page; ids do
+  not depend on where the repository lives.
+- **Known limit:** a paragraph that continues on the next page is split in two; PDF headers,
+  footers and page numbers are not removed.
+- **Revisit:** if the failure analysis (guide, step 12) points to these cuts.
+
+## D-011 Evaluation set written by hand, with unanswerable questions (2026-10-19)
+- **Decision:** 17 questions written from the four PDFs in `data/raw/` (AI Act, GDPR, the
+  default-definition guidelines and the PD/LGD estimation guidelines): 14 answerable and 3
+  unanswerable (they ask about national rules that are not in the corpus), to test that the
+  system abstains.
+- **Why:** the questions come before the pipeline results so they are not biased towards what
+  the retriever happens to find.
+- **Status:** provisional. It is extended to 20-30 questions, with `gold_evidence` and
+  `tags`, once the corpus is closed (see D-012).
+
+## D-012 Pipeline first, evaluation after the corpus and dataset are frozen (2026-10-20)
+- **Decision:** implement embeddings, store, `rag ingest` and `rag ask` (guide steps 5, 6, 7
+  and 9) on the current corpus; then close the corpus and finish the dataset; only then
+  implement metrics and the full evaluation (steps 8 and 10).
+- **Why:** more documents add distractors and change the difficulty, so a measurement made
+  earlier would have to be repeated. The new questions are written while reading the
+  documents, never after looking at what the retriever returns.
+- **Alternatives:** follow the guide order literally (metrics at step 8 on the current corpus).
+- **Revisit:** when the corpus is closed.
+
+## D-013 One source for the build order (2026-10-20)
+- **Decision:** `docs/v0.1-guide.md` is the only place that lists the steps of v0.1;
+  `docs/workflow.md` links to it and covers only git and experiments.
+- **Why:** two copies of the plan drifted apart (13 steps vs. 15).
+
+## D-014 Project name: rag-lab (2026-10-20)
+- **Decision:** the project is called `rag-lab` in the README, `pyproject.toml`, the lockfile
+  and the docs, matching the GitHub repository.
+- **Why:** the docs used `rag-lab` and the packaging used `rag-project`.
