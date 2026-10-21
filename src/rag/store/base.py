@@ -22,8 +22,8 @@ class VectorStore(ABC):
         """Return the ``k`` most similar chunks, best first, with 1-based ranks."""
 
     @abstractmethod
-    def save(self, directory: Path) -> None:
-        """Persist the store to disk."""
+    def save(self, directory: Path, extra_meta: dict | None = None) -> None:
+        """Persist the store to disk. ``extra_meta`` is merged into ``meta.json``."""
 
     @abstractmethod
     def load(self, directory: Path) -> None:
