@@ -36,7 +36,7 @@ class Embedder:
         """
         model = self._get_model()
         if not texts:
-            # The model does not return a 2D array for an empty list, so build it explicitly.
+            # The model does not return a 2D array for an empty list, so build it explicitly
             dim = model.get_embedding_dimension()
             return np.empty((0, dim), dtype=np.float32)
         vectors = model.encode(
