@@ -11,27 +11,27 @@ _ENC = tiktoken.get_encoding("cl100k_base")
 _SEP = _ENC.encode("\n\n")
 _HEADING_TOKENS = 12  # un párrafo más corto que esto y sin punto final se trata como título
 
+
 # funcion auxiliar para contar tokens
 def count_tokens(text: str) -> int:
     return len(_ENC.encode(text))
 
-    
 
 def chunk_pages(
     pages: list[RawPage], max_tokens: int, overlap: int, doc_hash: str = ""
 ) -> list[Chunk]:
     """Turn pages into chunks of at most ``max_tokens`` tokens with ``overlap`` shared tokens.
-    
-        (v0.1):
-          - count tokens with tiktoken (an approximation of the embedding model's tokenizer)
-          - split on paragraph boundaries first, and only cut inside a paragraph if it is too long
-          - build ids like ``{doc}::p{page}::c{index}`` and fill n_tokens and doc_hash
-          - read the chunks by eye afterwards: are sentences cut? are headings lost?
-    
-        The invariants in tests/test_chunking.py describe what "correct" means.
+
+    (v0.1):
+      - count tokens with tiktoken (an approximation of the embedding model's tokenizer)
+      - split on paragraph boundaries first, and only cut inside a paragraph if it is too long
+      - build ids like ``{doc}::p{page}::c{index}`` and fill n_tokens and doc_hash
+      - read the chunks by eye afterwards: are sentences cut? are headings lost?
+
+    The invariants in tests/test_chunking.py describe what "correct" means.
     """
-    if overlap >= max_tokens:
-        raise ValueError("overlap must be smaller than max_tokens")
+    if overlap < 0 or overlap >= max_tokens:
+        raise ValueError("overlap must be between 0 and max_tokens - 1")
     step = max_tokens - overlap
 
     chunks: list[Chunk] = []
@@ -66,7 +66,7 @@ def chunk_pages(
                     ids_per_chunk.append(cur)
                 windows, start = [], 0
                 while True:
-                    windows.append(ids[start:start + max_tokens])
+                    windows.append(ids[start : start + max_tokens])
                     if start + max_tokens >= len(ids):
                         break
                     start += step
@@ -80,7 +80,10 @@ def chunk_pages(
             else:
                 ids_per_chunk.append(cur)
                 tail = cur[-overlap:] if overlap else []
-                tail = tail[: max(0, max_tokens - len(ids) - len(_SEP))]
+                # Si no cabe entera, conservar el FINAL de la cola (lo más cercano al párrafo
+                # nuevo). Ojo: tail[-0:] devuelve todo, por eso se comprueba budget aparte.
+                budget = max(0, max_tokens - len(ids) - len(_SEP))
+                tail = tail[-budget:] if budget else []
                 cur = tail + (_SEP if tail else []) + ids
 
         if cur:
