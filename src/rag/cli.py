@@ -1,22 +1,120 @@
 """Command line entry point: ``rag ingest``, ``rag ask`` and ``rag eval``."""
 
+import json
+import time
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
+from rag.config import Settings, get_settings
+from rag.ingest.loaders import file_sha256, load_document
+
 app = typer.Typer(help="A small RAG pipeline built from scratch.", no_args_is_help=True)
+
+SUPPORTED_SUFFIXES = (".pdf", ".md", ".txt")
+INDEX_FILES = ("vectors.npy", "chunks.db", "meta.json")
+
+
+def _list_documents(path: Path) -> list[Path]:
+    """Return the supported documents directly inside ``path``, sorted by name.
+
+    Only the first level is read (no subfolders). A fixed order makes the index come out the
+    same on every run.
+    """
+    return sorted(
+        f for f in path.iterdir() if f.is_file() and f.suffix.lower() in SUPPORTED_SUFFIXES
+    )
+
+
+def _hash_documents(files: list[Path]) -> dict[str, str]:
+    """Map each file name to the SHA-256 of its content (the same name Chunk.doc will carry)."""
+    return {f.name: file_sha256(f) for f in files}
+
+
+def _build_meta(hashes: dict[str, str], settings: Settings) -> dict:
+    """What describes how an index was built: saved as extra_meta and compared on the next run.
+
+    Using one function for both directions keeps the keys identical in both places.
+    """
+    return {
+        "embedding_model": settings.embedding_model,
+        "chunk_tokens": settings.chunk_tokens,
+        "chunk_overlap": settings.chunk_overlap,
+        "doc_hashes": hashes,
+    }
+
+
+def _is_up_to_date(meta_path: Path, hashes: dict[str, str], settings: Settings) -> bool:
+    """True if the saved index was built from exactly these documents and settings.
+
+    Anything unexpected (no index, unreadable meta.json, a missing key) means "not up to date".
+    """
+    if not all((meta_path.parent / name).is_file() for name in INDEX_FILES):
+        return False
+    try:
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):  # ValueError covers invalid JSON and bad encoding
+        return False
+    if not isinstance(meta, dict):
+        return False
+    expected = _build_meta(hashes, settings)
+    return all(meta.get(key) == value for key, value in expected.items())
+
+
+def _fail(message: str) -> typer.Exit:
+    typer.echo(message, err=True)
+    return typer.Exit(code=1)
 
 
 @app.command()
 def ingest(
-    path: Annotated[Path, typer.Argument(help="Folder with the documents to index.")] = Path(
-        "data/raw"
-    ),
+    path: Annotated[
+        Path | None,
+        typer.Argument(help="Folder with the documents to index (default: RAG_RAW_DIR)."),
+    ] = None,
 ) -> None:
     """Read documents, chunk them, embed them and save the index."""
-    typer.echo(f"TODO: ingest {path}")
-    raise typer.Exit(code=1)
+    settings = get_settings()
+    folder = path or settings.raw_dir
+    if not folder.is_dir():
+        raise _fail(f"Folder not found: {folder}")
+
+    files = _list_documents(folder)
+    if not files:
+        raise _fail(f"No documents ({', '.join(SUPPORTED_SUFFIXES)}) found in {folder}")
+
+    hashes = _hash_documents(files)
+    if _is_up_to_date(settings.index_dir / "meta.json", hashes, settings):
+        typer.echo("Index is up to date, nothing to do.")
+        return
+
+    # Imported here so the helpers above can be used (and tested) without loading tiktoken,
+    # numpy or the embedding model.
+    from rag.embeddings import Embedder
+    from rag.ingest.chunking import chunk_pages
+    from rag.store.numpy_store import NumpyStore
+
+    start = time.perf_counter()
+
+    chunks = []
+    for file in files:
+        pages = load_document(file)
+        chunks.extend(
+            chunk_pages(pages, settings.chunk_tokens, settings.chunk_overlap, hashes[file.name])
+        )
+    if not chunks:
+        raise _fail("The documents contain no extractable text (scanned PDFs?).")
+
+    embedder = Embedder(settings.embedding_model)
+    vectors = embedder.encode_passages([chunk.text for chunk in chunks])  # one call for all
+
+    store = NumpyStore()
+    store.add(chunks, vectors)
+    store.save(settings.index_dir, extra_meta=_build_meta(hashes, settings))
+
+    seconds = time.perf_counter() - start
+    typer.echo(f"Indexed {len(files)} documents, {len(chunks)} chunks in {seconds:.1f} s.")
 
 
 @app.command()
