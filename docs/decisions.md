@@ -111,3 +111,16 @@ One entry per decision: what was chosen, why, what else was considered, and when
 - **Decision:** the project is called `rag-lab` in the README, `pyproject.toml`, the lockfile
   and the docs, matching the GitHub repository.
 - **Why:** the docs used `rag-lab` and the packaging used `rag-project`.
+
+## D-015 Add `fonttools` so pypdf can decode CFF Type1 fonts (2026-10-22)
+- **Decision:** add `fonttools` as a direct dependency.
+- **Why:** pypdf warns "fontTools is required to fully parse the encoding of a CFF Type1 font"
+  on `AESIA_AI_Act_Practical_Guides.pdf` (Gotham fonts). The extracted text was checked and is
+  valid for that file (no U+FFFD), because those fonts declare `/WinAnsiEncoding`. Other PDFs
+  with custom encodings could silently produce wrong text, and the warning is noise that hides
+  real problems.
+- **Alternatives:** silence the `pypdf` logger (no new dependency, but hides a warning that
+  can be real in another PDF).
+- **Cost:** one small pure-Python dependency, already a transitive tool in the PDF ecosystem.
+- **Not fixed by this:** words split by layout (`Int\nroductory`, `Guid\ne 1`) come from pypdf
+  text extraction, not from fonts (see L7).
