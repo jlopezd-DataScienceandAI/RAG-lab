@@ -4,7 +4,7 @@ from rag.models import EvalCase, RetrievalResult
 
 
 def is_relevant(result: RetrievalResult, case: EvalCase) -> bool:
-    """TODO(v0.1): a result is relevant if its doc equals gold_doc (and section, if given)."""
+    """TODO(v0.1): relevant if gold_evidence is in the chunk text, else if doc == gold_doc."""
     raise NotImplementedError("is_relevant")
 
 

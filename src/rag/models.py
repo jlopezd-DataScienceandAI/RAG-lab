@@ -30,7 +30,6 @@ class EvalCase(BaseModel):
     question: str
     answerable: bool = True
     gold_doc: str | None = None
-    gold_section: str | None = None
     expected_answer: str | None = None
     gold_evidence: str | None = None
     tags: list[str] = Field(default_factory=list)  # e.g. ["exact_term"], ["multi_hop"]

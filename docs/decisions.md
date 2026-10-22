@@ -91,6 +91,9 @@ One entry per decision: what was chosen, why, what else was considered, and when
   the retriever happens to find.
 - **Status:** provisional. It is extended to 20-30 questions, with `gold_evidence` and
   `tags`, once the corpus is closed (see D-012).
+  Update 2026-10-22: those 17 questions were removed with the placeholder corpus (`892a097`);
+  they are kept in git history (`0f90636`). The dataset is rewritten against the current
+  corpus, and its single format description is `data/eval/README.md`.
 
 ## D-012 Pipeline first, evaluation after the corpus and dataset are frozen (2026-10-20)
 - **Decision:** implement embeddings, store, `rag ingest` and `rag ask` (guide steps 5, 6, 7
@@ -124,3 +127,13 @@ One entry per decision: what was chosen, why, what else was considered, and when
 - **Cost:** one small pure-Python dependency, already a transitive tool in the PDF ecosystem.
 - **Not fixed by this:** words split by layout (`Int\nroductory`, `Guid\ne 1`) come from pypdf
   text extraction, not from fonts (see L7).
+
+## D-016 Drop `gold_section` from the evaluation set (2026-10-22)
+- **Decision:** `EvalCase` has no `gold_section` field. Relevance is `gold_evidence` found in the
+  chunk text (normalised), or, when a case has no evidence, `chunk.doc == gold_doc`.
+- **Why:** `gold_evidence` is more precise than a section or page, and "section or page" was
+  ambiguous across PDF and Markdown. It also meant filling one more field by hand per question,
+  with risk of errors in the ground truth.
+- **Alternatives:** keep it as a fallback for synthesis or `multi_hop` questions with no single
+  literal evidence.
+- **Revisit:** if many questions end up without `gold_evidence`.
