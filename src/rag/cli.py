@@ -22,8 +22,11 @@ def _list_documents(path: Path) -> list[Path]:
     Only the first level is read (no subfolders). A fixed order makes the index come out the
     same on every run.
     """
+    # Sorted by name as a plain string: sorting Path objects compares case-insensitively on
+    # Windows and case-sensitively elsewhere, which would change the chunk order per system.
     return sorted(
-        f for f in path.iterdir() if f.is_file() and f.suffix.lower() in SUPPORTED_SUFFIXES
+        (f for f in path.iterdir() if f.is_file() and f.suffix.lower() in SUPPORTED_SUFFIXES),
+        key=lambda f: f.name,
     )
 
 
@@ -120,8 +123,42 @@ def ingest(
 @app.command()
 def ask(question: Annotated[str, typer.Argument(help="Your question.")]) -> None:
     """Answer a question using the saved index, with citations."""
-    typer.echo(f"TODO: answer {question!r}")
-    raise typer.Exit(code=1)
+    if not question.strip():
+        raise _fail("The question is empty.")
+    settings = get_settings()
+    if not settings.anthropic_api_key:
+        raise _fail("ANTHROPIC_API_KEY is not set: add it to your .env file.")
+    if not all((settings.index_dir / name).is_file() for name in INDEX_FILES):
+        raise _fail(f"No index in {settings.index_dir}: run `rag ingest` first.")
+
+    # Imported here to keep `rag --help` fast (torch takes seconds to import).
+    from rag.embeddings import Embedder
+    from rag.generation import cited_ids, generate_answer, load_prompt
+    from rag.retrieval import retrieve
+    from rag.store.numpy_store import NumpyStore
+
+    store = NumpyStore()
+    store.load(settings.index_dir)
+    embedder = Embedder(settings.embedding_model)
+
+    results = retrieve(question, embedder, store, settings.top_k)
+    answer = generate_answer(
+        question,
+        results,
+        settings.generation_model,
+        load_prompt(settings.prompt_path),
+        settings.anthropic_api_key,
+        settings.max_answer_tokens,
+    )
+
+    typer.echo(answer)
+    cited = cited_ids(answer)
+    sources = [r for r in results if r.chunk.id in cited]
+    if sources:
+        typer.echo("\nSources:")
+        for r in sources:
+            preview = " ".join(r.chunk.text.split())[:100]
+            typer.echo(f"  [{r.chunk.id}] {preview}")
 
 
 @app.command(name="eval")
