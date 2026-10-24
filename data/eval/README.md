@@ -1,11 +1,9 @@
 # Evaluation dataset
 
 `questions.jsonl` is the ground truth every version is evaluated against. It holds one JSON
-object per line (see `EvalCase` in `src/rag/models.py`). This file is the single description of
-the format; the guide (step 2) and the tests follow it.
-
-The file is written by hand once the corpus in `data/raw/` is closed (see D-012), and before
-any metric is measured. It does not exist yet.
+object per line (see `EvalCase` in `src/rag/models.py`). This file only describes the
+**format**; how the dataset is used, which metrics are computed and how runs are compared is in
+[`docs/evaluation.md`](../../docs/evaluation.md). It does not exist yet.
 
 ## Format
 
@@ -56,5 +54,5 @@ The minimums add up to 20, the maximums to 30.
   (see L7).
 - Write the questions while reading the documents, never after looking at what the retriever
   returns.
-- Every version is evaluated against this same file. If you change it, note it in
-  `CHANGELOG.md` and re-run the earlier versions.
+- Changing this file has consequences for every earlier result; see
+  [`docs/evaluation.md`](../../docs/evaluation.md).

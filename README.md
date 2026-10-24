@@ -32,6 +32,25 @@ Evaluation (rag eval)
   questions.jsonl -> retrieval metrics (Hit@k, MRR) + judged answers -> results/
 ```
 
+## Evaluation
+
+Every version is scored on the same hand-written dataset of 20-30 questions over the corpus
+(factual, exact-term, multi-hop and unanswerable). Retrieval is measured on its own, without an
+LLM, and generation is measured on top of it.
+
+| Metric | What it tells you |
+|---|---|
+| Hit@1, Hit@5 | Share of questions whose correct chunk is first / among the top 5 |
+| MRR | Mean of 1/rank of the first correct chunk: rewards ranking it high |
+| Faithfulness, correctness | Judged by an LLM with a fixed, versioned rubric |
+| Citation validity | Every `[chunk_id]` cited was really retrieved (checked by code) |
+| Abstention accuracy | On questions the corpus cannot answer, the system says it does not know |
+| Latency p50 / p95 | End-to-end time per question |
+
+Rules: one variable changes per experiment, results are timestamped and never overwritten, and
+each rate is reported with its count (with about 20 questions, one question is 5 points). Full
+methodology, procedure and limits: [docs/evaluation.md](docs/evaluation.md).
+
 ## Quickstart
 
 ```bash
@@ -95,6 +114,7 @@ docs/                design decisions, limitations, workflow
 
 ## Documentation
 
+- [Evaluation methodology](docs/evaluation.md)
 - [Design decisions](docs/decisions.md)
 - [Limitations and the experiments that measure them](docs/limitations.md)
 - [Development workflow](docs/workflow.md)
