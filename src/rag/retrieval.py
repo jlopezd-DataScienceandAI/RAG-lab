@@ -8,5 +8,5 @@ from rag.store.base import VectorStore
 def retrieve(
     question: str, embedder: Embedder, store: VectorStore, k: int
 ) -> list[RetrievalResult]:
-    """TODO(v0.1): embed the question and return the top-k results from the store."""
-    raise NotImplementedError("retrieve")
+    """Embed the question and return the top-k results from the store, best first."""
+    return store.search(embedder.encode_query(question), k)
