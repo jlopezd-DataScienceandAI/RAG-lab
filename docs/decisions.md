@@ -137,3 +137,17 @@ One entry per decision: what was chosen, why, what else was considered, and when
 - **Alternatives:** keep it as a fallback for synthesis or `multi_hop` questions with no single
   literal evidence.
 - **Revisit:** if many questions end up without `gold_evidence`.
+
+## D-017 Do not send `temperature` to the Claude API (2026-10-24)
+- **Decision:** `generate_answer` (and, later, the judge) call `messages.create` without the
+  `temperature` parameter.
+- **Why:** the parameter is deprecated in current Claude models and is being retired, so
+  sending it risks API errors. The code should not depend on something that is going away.
+- **Consequence:** the v0.1 guide and `docs/evaluation.md` assumed `temperature=0` to make runs
+  repeatable. Without it, generation is no longer deterministic: the same run can differ by a
+  question or two, possibly more. Retrieval is unaffected (it uses no LLM). Differences smaller
+  than 2 questions are still not claimed (`docs/evaluation.md`, section 8), and repeating the
+  final run 3 times and reporting the range becomes more worthwhile.
+- **Alternatives:** keep sending `temperature=0` (breaks when the parameter is removed); pin an
+  older model that still accepts it (blocks using the current models).
+- **Revisit:** if the API offers a replacement setting for reproducible sampling.
